@@ -6,30 +6,6 @@ from sklearn.metrics import roc_auc_score
 import time
 import os
 
-"""
-pid = os.getpid()
-os.sched_setaffinity(pid, {21,22,23,24})
-
-# Path to the cgroup v2 hierarchy
-cgroup_path = "/cgroup2"
-
-# Name of the new cgroup
-cgroup_name = "my_cgroup_131"
-
-# Path to the new cgroup
-new_cgroup_path = os.path.join(cgroup_path, cgroup_name)
-
-# Create the new cgroup
-os.makedirs(new_cgroup_path, exist_ok=True)
-# Set the memory limit (in bytes)
-with open(os.path.join(new_cgroup_path, "memory.high"), "w") as f:
-    f.write("4250M")
-
-with open(os.path.join(new_cgroup_path, "cgroup.procs"), "w") as f:
-    f.write(str(pid))"""
-
-start_time = time.time()
-
 
 data = pd.read_csv('/users/YuqiLi/HIGGS.csv', header=None)
 X = data.iloc[:, 1:]
@@ -55,7 +31,4 @@ bst = xgb.train(param, dtrain, num_round)
 
 preds = bst.predict(dtest)
 
-end_time = time.time()
-
 print('AUC: ', roc_auc_score(y_test, preds))
-print('Total running time: %s seconds' % (end_time - start_time))
