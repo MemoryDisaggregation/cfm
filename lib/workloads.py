@@ -162,14 +162,14 @@ class Quicksort(Workload):
 
 class Xgboost(Workload):
     wname = "xgboost"
-    ideal_mem = 11150
-    min_ratio = 0.3
+    ideal_mem = 16300
+    min_ratio = 0.5
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "python"
-    cpu_req = 4
+    cpu_req = 2
     x = [1,      0.9,    0.8,    0.7,    0.6,    0.5,    0.4,    0.3,    0.2]
-    y = [332.45, 336.90, 341.52, 345.21, 358.92, 362.85, 382.37, 408.67, 413.20]
-    coeff = [-1012.7039627,   2482.42553743, -1996.51689977,   477.3734719, 381.04722222]
+    y = [338.45, 341.90, 347.52, 349.21, 352.98, 356.92, 386.09, 405.70, 430.11]
+    coeff = [ -876.04895105,  1878.74643875, -1148.56526807,    25.39511137, 457.79055556]
     def get_cmdline(self, procs_path, pinned_cpus):
         prefix = "echo $$ > {} &&".format(procs_path)
         #arg = '8192'
@@ -182,7 +182,7 @@ class Xgboost(Workload):
 class Snappy(Workload):
     wname = "snappy"
     ideal_mem = 34000
-    min_ratio = 0.7
+    min_ratio = 0.8
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "compress"
     cpu_req = 1
@@ -226,14 +226,14 @@ class Pagerank(Workload):
 class Redis(Workload):
     wname = "redis"
     ideal_mem = 31800
-    min_ratio = 0.5
+    min_ratio = 0.6
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "redis-server"
     port_number = 63791
     cpu_req = 2
     x = [1,      0.9,    0.8,    0.7,    0.6,    0.5,    0.4]
-    y = [808.74, 810.76, 815.47, 817.41, 819.92, 820.10, 840.10 ]
-    coeff = [2664.77272727, -7949.41919192,  8685.70833333, -4138.11046176, 1545.93190476]
+    y = [1273.74,1280.33,1290.85,1340.63,1479.72,1694.63,1949.36]
+    coeff = [-14813.52272727,  38076.50252525, -31906.18749999,   8189.04796176, 1725.16288095]
     def __init__(self, idd, pinned_cpus, mem_ratio=1):
         super().__init__(idd, pinned_cpus, mem_ratio)
         self.port_number = Redis.port_number
