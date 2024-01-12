@@ -187,7 +187,7 @@ class Snappy(Workload):
     binary_name = "compress"
     cpu_req = 1
     x = [1,      0.9,    0.8,    0.7,    0.6]
-    y = [134.88, 143.15, 155.37, 211.18, 274.42]
+    y = [138.88, 143.15, 155.37, 211.18, 274.42]
     coeff = [-31583.33333335,  100776.66666673, -118088.66666675,   59796.08333338, -10765.87000001]
     def get_cmdline(self, procs_path, pinned_cpus):
         prefix = "echo $$ > {} &&".format(procs_path)
@@ -231,8 +231,8 @@ class Redis(Workload):
     binary_name = "redis-server"
     port_number = 63791
     cpu_req = 2
-    x = [1,      0.9,    0.8,    0.7,    0.6,    0.5,    0.4]
-    y = [1273.74,1280.33,1290.85,1340.63,1479.72,1694.63,1949.36]
+    x = [1,       0.9,     0.8,     0.7,     0.6,     0.5,      0.4]
+    y = [1273.74, 1280.33, 1290.85, 1340.63, 1479.72, 1694.631, 1949.36 ]
     coeff = [-14813.52272727,  38076.50252525, -31906.18749999,   8189.04796176, 1725.16288095]
     def __init__(self, idd, pinned_cpus, mem_ratio=1):
         super().__init__(idd, pinned_cpus, mem_ratio)
