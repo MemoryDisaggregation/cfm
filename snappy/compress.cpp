@@ -55,10 +55,10 @@ int main(int argc, char* argv[]) {
     std::string md5sum = md5(compressed);
     std::cout << "MD5: " << md5sum << std::endl;
 
-    std::ofstream output("merged.snappy", std::ios::binary);
+    std::ofstream output("/mydata/merged.snappy", std::ios::binary);
     output.write(compressed.data(), compressed.size());
 
-    std::remove("merged.snappy");
+    std::remove("/mydata/merged.snappy");
 
     return 0;
 }

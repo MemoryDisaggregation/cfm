@@ -160,6 +160,26 @@ class Quicksort(Workload):
         full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
         return full_command
 
+class RandomAccess(Workload):
+    wname = "random_acccess"
+    ideal_mem = 33000
+    min_ratio = 0.1
+    min_mem = int(min_ratio * ideal_mem)
+    binary_name = "random_acccess"
+    cpu_req = 1
+    x = [1,      0.9,    0.8,   0.7,    0.6]
+    y = [248.75, 260.41, 268.4, 280.11, 300.78]
+    coeff = [-895.83333333, 1814.16666667, -719.04166667, -586.04166667,  635.5]
+
+    def get_cmdline(self, procs_path, pinned_cpus):
+        prefix = "echo $$ > {} &&".format(procs_path)
+        arg = '32768'
+        shell_cmd = '/usr/bin/time -v' + ' ' + constants.WORK_DIR + '/quicksort/random_access {}'.format(arg)
+        pinned_cpus_string = ','.join(map(str, pinned_cpus))
+        set_cpu = 'taskset -c {}'.format(pinned_cpus_string)
+        full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
+        return full_command
+
 class Xgboost(Workload):
     wname = "xgboost"
     ideal_mem = 16300
@@ -181,7 +201,7 @@ class Xgboost(Workload):
 
 class Snappy(Workload):
     wname = "snappy"
-    ideal_mem = 34000
+    ideal_mem = 54000
     min_ratio = 0.8
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "compress"
@@ -191,7 +211,7 @@ class Snappy(Workload):
     coeff = [-31583.33333335,  100776.66666673, -118088.66666675,   59796.08333338, -10765.87000001]
     def get_cmdline(self, procs_path, pinned_cpus):
         prefix = "echo $$ > {} &&".format(procs_path)
-        arg = constants.WORK_DIR + '/snappy/merged.xml'
+        arg = '/mydata/merged.xml'
         shell_cmd = '/usr/bin/time -v' + ' ' + 'python' + ' ' + constants.WORK_DIR + '/snappy/compress.py {}'.format(arg) 
         #shell_cmd = '/usr/bin/time -v' + ' ' + constants.WORK_DIR + '/snappy/compress {}'.format(arg) 
         pinned_cpus_string = ','.join(map(str, pinned_cpus))
@@ -256,7 +276,7 @@ class Redis(Workload):
         # YCSB load data
         ycsb_load = taskset_ycsb + ' ' + constants.WORK_DIR + "/redis/ycsb-0.17.0/bin/ycsb.sh load redis -s -P " + constants.WORK_DIR + "/redis/ycsb-0.17.0/workloads/workloadb -p \"redis.host=localhost\" -p \"redis.port={}\" -p \"operationcount=30000000\" -p \"recordcount=30000000\" -p \"fieldlength=256\" -p \"fieldcount=2\"".format(self.port_number)
         # YCSB run workload with Zipf distribution
-        ycsb_run = taskset_ycsb + ' ' + constants.WORK_DIR + "/redis/ycsb-0.17.0/bin/ycsb.sh run redis -s -P " + constants.WORK_DIR + "/redis/ycsb-0.17.0/workloads/workloadb -p \"redis.host=localhost\" -p \"redis.port={}\" -p \"operationcount=30000000\" -p \"requestdistribution=zipfian\"".format(self.port_number)
+        ycsb_run = taskset_ycsb + ' ' + constants.WORK_DIR + "/redis/ycsb-0.17.0/bin/ycsb.sh run redis -s -P " + constants.WORK_DIR + "/redis/ycsb-0.17.0/workloads/workloadb -p \"redis.host=localhost\" -p \"redis.port={}\" -p \"operationcount=30000000\" -p \"requestdistribution=uniform\"".format(self.port_number)
     
         sleep = 'sleep 5'
         ycsb_cmd = ' && '.join((ycsb_load, sleep, ycsb_run))
@@ -362,5 +382,6 @@ def get_workload_class(wname):
             'redis': Redis,
             'snappy': Snappy,
             'pagerank': Pagerank,
-            'xsbench': Xsbench
+            'xsbench': Xsbench,
+            'random_access': RandomAccess
             }[wname]
