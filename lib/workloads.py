@@ -199,6 +199,25 @@ class Xgboost(Workload):
         full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
         return full_command
 
+class Kmeans(Workload):
+    wname = "kmeans"
+    ideal_mem = 4100
+    min_ratio = 0.5
+    min_mem = int(min_ratio * ideal_mem)
+    binary_name = "python"
+    cpu_req = 1
+    x = [1,      0.9,    0.8,    0.7,    0.6,    0.5,    0.4,    0.3,    0.2]
+    y = [338.45, 341.90, 347.52, 349.21, 352.98, 356.92, 386.09, 405.70, 430.11]
+    coeff = [ -876.04895105,  1878.74643875, -1148.56526807,    25.39511137, 457.79055556]
+    def get_cmdline(self, procs_path, pinned_cpus):
+        prefix = "echo $$ > {} &&".format(procs_path)
+        #arg = '8192'
+        shell_cmd = '/usr/bin/time -v' + ' ' + 'python ' + constants.WORK_DIR + '/kmeans/emails.py'
+        pinned_cpus_string = ','.join(map(str, pinned_cpus))
+        set_cpu = 'taskset -c {}'.format(pinned_cpus_string)
+        full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
+        return full_command
+
 class Snappy(Workload):
     wname = "snappy"
     ideal_mem = 54000
@@ -383,5 +402,6 @@ def get_workload_class(wname):
             'snappy': Snappy,
             'pagerank': Pagerank,
             'xsbench': Xsbench,
-            'random_access': RandomAccess
+            'random_access': RandomAccess,
+            'kmeans': Kmeans
             }[wname]

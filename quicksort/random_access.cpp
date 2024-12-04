@@ -33,10 +33,22 @@ void random_add(long numInts) {
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();  
     std::mt19937 gen(seed);  
     std::uniform_int_distribution<> dis(0, atomic_vector->size() - 1); 
+	int i = 0;
+	uint64_t count = 0;
+	uint64_t mid = atomic_vector->size() / 2;
+	
     
     while(true) {
-        int rand_num = dis(gen);
-        atomic_vector->at(rand_num).fetch_add(1);
+		if((count / 100) % 2 == 0) {
+			for(uint32_t idx = 0; idx < mid; ++idx) {
+				atomic_vector->at(idx).fetch_add(1);
+			}
+		} else {
+			for(uint32_t idx = mid; idx < atomic_vector->size(); ++idx) {
+				atomic_vector->at(idx).fetch_add(1);
+			}
+		}
+		count++;
     }
 
 }
