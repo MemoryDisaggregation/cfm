@@ -3,10 +3,10 @@
 program_path="/mydata/cfm/quicksort/random_access"
 program_arg=32768
 
-cmd="taskset -c 1,2,3,4,5,6,7,8 /usr/bin/time -v $program_path $program_arg"
+cmd="taskset -c 0,1,2,3,4,5,6,7 /usr/bin/time -v $program_path $program_arg"
 
 
-echo $((16 * 1024 * 1024 * 1024)) | sudo tee /sys/fs/cgroup/memory/memctl2/memory.limit_in_bytes
+echo $((2 * 1024 * 1024 * 1024)) | sudo tee /sys/fs/cgroup/memory/memctl2/memory.limit_in_bytes
 
 $cmd &
 pid=$!

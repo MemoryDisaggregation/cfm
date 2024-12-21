@@ -3,10 +3,10 @@
 program_path="/mydata/cfm/quicksort/quicksort"
 program_arg=10240
 
-cmd="taskset -c 0 /usr/bin/time -v $program_path $program_arg"
+cmd="taskset -c 9 /usr/bin/time -v $program_path $program_arg"
 
 
-echo $((5 * 1024 * 1024 * 1024)) | sudo tee /sys/fs/cgroup/memory/memctl/memory.limit_in_bytes
+echo $((600 * 1024 * 1024)) | sudo tee /sys/fs/cgroup/memory/memctl/memory.limit_in_bytes
 
 $cmd &
 pid=$!
