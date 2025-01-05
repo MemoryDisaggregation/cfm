@@ -39,15 +39,10 @@ void random_add(long numInts) {
 	
     
     while(true) {
-		if((count / 100) % 2 == 0) {
-			for(uint32_t idx = 0; idx < mid; ++idx) {
-				atomic_vector->at(idx).fetch_add(1);
-			}
-		} else {
-			for(uint32_t idx = mid; idx < atomic_vector->size(); ++idx) {
-				atomic_vector->at(idx).fetch_add(1);
-			}
-		}
+		uint64_t idx = dis(gen);
+		
+		atomic_vector->at(idx).fetch_add(1);
+		
 		count++;
     }
 
@@ -69,12 +64,12 @@ int main(int argc, char *argv[]) {
 	//std::generate(v.begin(), v.end(), std::rand);
 	//start = high_resolution_clock::now();
 
-	std::thread* threads[8];
-	for(int i = 0; i < 8; ++i) {
-		threads[i] = new std::thread(random_add, (numInts/8));
+	std::thread* threads[16];
+	for(int i = 0; i < 16; ++i) {
+		threads[i] = new std::thread(random_add, (numInts/16));
 	}
 
-	for(int i = 0; i < 8; ++i) {
+	for(int i = 0; i < 16; ++i) {
 		threads[i]->join();
 	}
 
