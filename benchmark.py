@@ -39,7 +39,7 @@ def run_benchmark(args):
 def main():
     # Parse Command Line Arguments
     workload_choices = ['quicksort', 'xgboost', 'kmeans', 'xsbench',
-                        'redis', 'pagerank', 'snappy', 'random_access']
+                        'redis', 'pagerank', 'snappy', 'random_access', 'wordcount']
 
     parser = argparse.ArgumentParser(description='Run a workload in a '
                                      'parameterized container')
