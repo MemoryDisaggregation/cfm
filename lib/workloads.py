@@ -180,6 +180,26 @@ class RandomAccess(Workload):
         full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
         return full_command
 
+class Matrix(Workload):
+    wname = "matrix"
+    ideal_mem = 2048
+    min_ratio = 0.1
+    min_mem = int(min_ratio * ideal_mem)
+    binary_name = "matrix"
+    cpu_req = 1
+    x = [1,      0.9,    0.8,   0.7,    0.6]
+    y = [248.75, 260.41, 268.4, 280.11, 300.78]
+    coeff = [-895.83333333, 1814.16666667, -719.04166667, -586.04166667,  635.5]
+
+    def get_cmdline(self, procs_path, pinned_cpus):
+        prefix = "echo $$ > {} &&".format(procs_path)
+        arg = '16 2048'
+        shell_cmd = '/usr/bin/time -v' + ' ' + constants.WORK_DIR + '/matrix/matrix {}'.format(arg)
+        pinned_cpus_string = ','.join(map(str, pinned_cpus))
+        set_cpu = 'taskset -c {}'.format(pinned_cpus_string)
+        full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
+        return full_command
+
 class WordCount(Workload):
     wname = "wordcount"
     ideal_mem = 33000
@@ -423,6 +443,7 @@ def get_workload_class(wname):
             'pagerank': Pagerank,
             'xsbench': Xsbench,
             'random_access': RandomAccess,
+            'matrix': Matrix,
             'wordcount': WordCount,
             'kmeans': Kmeans
             }[wname]

@@ -13,7 +13,7 @@ sudo sh -c "echo '+memory' > $CGROUP_BENCH/cgroup.subtree_control"
 
 sudo chown $USER -R $CGROUP_ROOT
 
-echo "enabling readahead"
-sudo sh -c "echo 3 > /proc/sys/vm/page-cluster"
+echo "disable readahead"
+sudo sh -c "echo 0 > /proc/sys/vm/page-cluster"
 
 echo "done"

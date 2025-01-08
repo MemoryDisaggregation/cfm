@@ -44,6 +44,7 @@ void random_add(long numInts) {
 		atomic_vector->at(idx).fetch_add(1);
 		
 		count++;
+		std::this_thread::sleep_for(std::chrono::microseconds(2));
     }
 
 }
@@ -64,12 +65,12 @@ int main(int argc, char *argv[]) {
 	//std::generate(v.begin(), v.end(), std::rand);
 	//start = high_resolution_clock::now();
 
-	std::thread* threads[16];
-	for(int i = 0; i < 16; ++i) {
-		threads[i] = new std::thread(random_add, (numInts/16));
+	std::thread* threads[32];
+	for(int i = 0; i < 32; ++i) {
+		threads[i] = new std::thread(random_add, (numInts/32));
 	}
 
-	for(int i = 0; i < 16; ++i) {
+	for(int i = 0; i < 32; ++i) {
 		threads[i]->join();
 	}
 
