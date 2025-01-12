@@ -160,6 +160,26 @@ class Quicksort(Workload):
         full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
         return full_command
 
+class LinearRegression(Workload):
+    wname = "linearregression"
+    ideal_mem = 8200
+    min_ratio = 0.7
+    min_mem = int(min_ratio * ideal_mem)
+    binary_name = "lr"
+    cpu_req = 1
+    x = [1,      0.9,    0.8,   0.7,    0.6]
+    y = [248.75, 260.41, 268.4, 280.11, 300.78]
+    coeff = [-895.83333333, 1814.16666667, -719.04166667, -586.04166667,  635.5]
+
+    def get_cmdline(self, procs_path, pinned_cpus):
+        prefix = "echo $$ > {} &&".format(procs_path)
+        #arg = '10240'
+        shell_cmd = '/usr/bin/time -v' + ' ' + constants.WORK_DIR + '/linearregression/lr'
+        pinned_cpus_string = ','.join(map(str, pinned_cpus))
+        set_cpu = 'taskset -c {}'.format(pinned_cpus_string)
+        full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
+        return full_command
+
 class RandomAccess(Workload):
     wname = "random_acccess"
     ideal_mem = 33000
@@ -280,7 +300,7 @@ class Snappy(Workload):
 
 class Pagerank(Workload):
     wname = "pagerank"
-    ideal_mem = 18900
+    ideal_mem = 5250
     min_ratio = 1
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "pr"
@@ -291,15 +311,100 @@ class Pagerank(Workload):
     def get_cmdline(self, procs_path, pinned_cpus):
         prefix = "echo $$ > {} &&".format(procs_path)
         #limit_mem = "echo $$ > {} ".format(procs_path)
-        arg = '-f' + ' ' + constants.WORK_DIR + '/pagerank/gapbs/k27output.sg'
+        #arg = '-f' + ' ' + constants.WORK_DIR + '/pagerank/gapbs/k27output.sg'
         #arg = '-u 27'
-        pr_cmd = constants.WORK_DIR + '/pagerank/gapbs/pr {}'.format(arg)
+        #pr_cmd = constants.WORK_DIR + '/pagerank/gapbs/pr {}'.format(arg)
+        pr_cmd = constants.WORK_DIR + '/pagerank/pr'
         shell_cmd = '/usr/bin/time -v' + ' ' + pr_cmd
         pinned_cpus_string = ','.join(map(str, pinned_cpus))
         set_cpu = 'taskset -c {}'.format(pinned_cpus_string)
         full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
         return full_command
 
+
+class Memcached(Workload):
+    wname = "memcached"
+    ideal_mem = 21800  
+    min_ratio = 0.6
+    min_mem = int(min_ratio * ideal_mem)
+    binary_name = "memcached"
+    port_number = 11500 
+    cpu_req = 2
+    x = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4]
+    y = [1273.74, 1280.33, 1290.85, 1340.63, 1479.72, 1694.631, 1949.36]
+    coeff = [-14813.52272727, 38076.50252525, -31906.18749999, 8189.04796176, 1725.16288095]
+
+    def __init__(self, idd, pinned_cpus, mem_ratio=1):
+        super().__init__(idd, pinned_cpus, mem_ratio)
+        self.port_number = Memcached.port_number
+        self.memcached_bench_pids = set()
+        Memcached.port_number += 1
+
+    def get_cmdline(self, procs_path, pinned_cpus):
+        prefix = 'echo $$ > {} &&'
+        memcached_serv = "/usr/bin/time -v memcached -p {} -m {} -c 1024 -t 4".format(
+            self.port_number, self.ideal_mem)
+        cpu_list = list(pinned_cpus)
+        cpu_list_taskset = ','.join((str(cpu_list[0]), str(cpu_list[1]), str(cpu_list[2]), str(cpu_list[3])))
+        taskset_serv = 'taskset -c {}'.format(cpu_list_taskset)
+        memcached_serv = ' '.join((prefix, 'exec', taskset_serv, memcached_serv))
+        memcached_serv = memcached_serv.format(procs_path)
+
+        taskset_ycsb = 'taskset -c {}'.format(cpu_list[4])
+        ycsb_load = taskset_ycsb + ' ' + constants.WORK_DIR + "/memcached/ycsb-0.17.0/bin/ycsb.sh load memcached -s -P " + \
+                    constants.WORK_DIR + "/memcached/ycsb-0.17.0/workloads/workloadb -p \"memcached.hosts=localhost:{}\" -p \"operationcount=30000000\" -p \"recordcount=30000000\" -p \"fieldlength=256\" -p \"fieldcount=2\"".format(self.port_number)
+        ycsb_run = taskset_ycsb + ' ' + constants.WORK_DIR + "/memcached/ycsb-0.17.0/bin/ycsb.sh run memcached -s -P " + \
+                   constants.WORK_DIR + "/memcached/ycsb-0.17.0/workloads/workloadb -p \"memcached.hosts=localhost:{}\" -p \"operationcount=30000000\" -p \"requestdistribution=uniform\"".format(self.port_number)
+        
+        sleep = 'sleep 5'
+        ycsb_cmd = ' && '.join((ycsb_load, sleep, ycsb_run))
+        return (memcached_serv, ycsb_cmd)
+
+    def start(self):
+        self.thread = threading.Thread(target=self.__exec)
+        self.thread.start()
+        while not self.is_alive():
+            pass
+
+    def __exec(self):
+        memcached, ycsb_cmd = self.cmdline
+
+        print(self.cmdline)
+        self.ts_start = time.time()
+
+        self.popen = subprocess.Popen(memcached, stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE, shell=True,
+                                      preexec_fn=os.setsid)
+
+        time.sleep(3)  # Wait for memcached to boot
+
+        ycsb_load, _, ycsb_run = ycsb_cmd.split(' && ')
+
+        ycsb_load_proc = subprocess.Popen(shlex.split(ycsb_load), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+        stdout, stderr = ycsb_load_proc.communicate()
+        print(stdout.decode('utf-8'))
+        print(stderr.decode('utf-8'))
+
+        time.sleep(5)
+
+        ycsb_run_proc = subprocess.Popen(shlex.split(ycsb_run), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+        stdout, stderr = ycsb_run_proc.communicate()
+        print(stdout.decode('utf-8'))
+        print(stderr.decode('utf-8'))
+
+        os.killpg(os.getpgid(self.popen.pid), signal.SIGINT)
+
+        self.stdout, self.stderr = self.popen.communicate()
+        self.ts_finish = time.time()
+        print(self.stdout.decode('utf-8'))
+        print(self.stderr.decode('utf-8'))
+
+        self.container.delete()
+
+    def get_pids(self):
+        pids = list(self.container.get_pids())
+        pids.extend(self.memcached_bench_pids)
+        return pids
 
 
 class Redis(Workload):
@@ -440,10 +545,12 @@ def get_workload_class(wname):
             'xgboost': Xgboost,
             'redis': Redis,
             'snappy': Snappy,
+            'memcached': Memcached,
             'pagerank': Pagerank,
             'xsbench': Xsbench,
             'random_access': RandomAccess,
             'matrix': Matrix,
             'wordcount': WordCount,
-            'kmeans': Kmeans
+            'kmeans': Kmeans,
+            'linearregression': LinearRegression,
             }[wname]
