@@ -1,0 +1,1 @@
+g++ -o mc mc.cc -lmemcached -pthread

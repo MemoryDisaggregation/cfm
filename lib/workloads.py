@@ -142,7 +142,7 @@ class Workload:
 
 class Quicksort(Workload):
     wname = "quicksort"
-    ideal_mem = 10400
+    ideal_mem = 1040
     min_ratio = 0.7
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "quicksort"
@@ -153,7 +153,7 @@ class Quicksort(Workload):
 
     def get_cmdline(self, procs_path, pinned_cpus):
         prefix = "echo $$ > {} &&".format(procs_path)
-        arg = '10240'
+        arg = '1024'
         shell_cmd = '/usr/bin/time -v' + ' ' + constants.WORK_DIR + '/quicksort/quicksort {}'.format(arg)
         pinned_cpus_string = ','.join(map(str, pinned_cpus))
         set_cpu = 'taskset -c {}'.format(pinned_cpus_string)
@@ -324,7 +324,7 @@ class Pagerank(Workload):
 
 class Memcached(Workload):
     wname = "memcached"
-    ideal_mem = 21800  
+    ideal_mem = 24380  
     min_ratio = 0.6
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "memcached"
@@ -345,20 +345,21 @@ class Memcached(Workload):
         memcached_serv = "/usr/bin/time -v memcached -p {} -m {} -c 1024 -t 4".format(
             self.port_number, self.ideal_mem)
         cpu_list = list(pinned_cpus)
-        cpu_list_taskset = ','.join((str(cpu_list[0]), str(cpu_list[1]), str(cpu_list[2]), str(cpu_list[3])))
-        taskset_serv = 'taskset -c {}'.format(cpu_list_taskset)
+        sever_taskset = ','.join((str(cpu_list[0]), str(cpu_list[1]), str(cpu_list[2]), str(cpu_list[3])))
+        taskset_serv = 'taskset -c {}'.format(sever_taskset)
         memcached_serv = ' '.join((prefix, 'exec', taskset_serv, memcached_serv))
         memcached_serv = memcached_serv.format(procs_path)
 
-        taskset_ycsb = 'taskset -c {}'.format(cpu_list[4])
-        ycsb_load = taskset_ycsb + ' ' + constants.WORK_DIR + "/memcached/ycsb-0.17.0/bin/ycsb.sh load memcached -s -P " + \
-                    constants.WORK_DIR + "/memcached/ycsb-0.17.0/workloads/workloadb -p \"memcached.hosts=localhost:{}\" -p \"operationcount=30000000\" -p \"recordcount=30000000\" -p \"fieldlength=256\" -p \"fieldcount=2\"".format(self.port_number)
-        ycsb_run = taskset_ycsb + ' ' + constants.WORK_DIR + "/memcached/ycsb-0.17.0/bin/ycsb.sh run memcached -s -P " + \
-                   constants.WORK_DIR + "/memcached/ycsb-0.17.0/workloads/workloadb -p \"memcached.hosts=localhost:{}\" -p \"operationcount=30000000\" -p \"requestdistribution=uniform\"".format(self.port_number)
+        client_taskset = ','.join((str(cpu_list[4]), str(cpu_list[5]), str(cpu_list[6]), str(cpu_list[7])))
+
+        taskset_client = 'taskset -c {}'.format(client_taskset)
+        #ycsb_load = taskset_ycsb + ' ' + constants.WORK_DIR + "/memcached/ycsb-0.17.0/bin/ycsb.sh load memcached -s -P " + \
+        #            constants.WORK_DIR + "/memcached/ycsb-0.17.0/workloads/workloadb -p \"memcached.hosts=localhost:{}\" -p \"operationcount=30000000\" -p \"recordcount=30000000\" -p \"fieldlength=256\" -p \"fieldcount=2\"".format(self.port_number)
+        #ycsb_run = taskset_ycsb + ' ' + constants.WORK_DIR + "/memcached/ycsb-0.17.0/bin/ycsb.sh run memcached -s -P " + \
+        #           constants.WORK_DIR + "/memcached/ycsb-0.17.0/workloads/workloadb -p \"memcached.hosts=localhost:{}\" -p \"operationcount=30000000\" -p \"requestdistribution=uniform\"".format(self.port_number)
         
-        sleep = 'sleep 5'
-        ycsb_cmd = ' && '.join((ycsb_load, sleep, ycsb_run))
-        return (memcached_serv, ycsb_cmd)
+        client_cmd = 'exec' + ' ' + taskset_client + ' ' + constants.WORK_DIR + "/memcached/mc {}".format(self.port_number)
+        return (memcached_serv, client_cmd)
 
     def start(self):
         self.thread = threading.Thread(target=self.__exec)
@@ -367,7 +368,7 @@ class Memcached(Workload):
             pass
 
     def __exec(self):
-        memcached, ycsb_cmd = self.cmdline
+        memcached, client_cmd = self.cmdline
 
         print(self.cmdline)
         self.ts_start = time.time()
@@ -378,19 +379,18 @@ class Memcached(Workload):
 
         time.sleep(3)  # Wait for memcached to boot
 
-        ycsb_load, _, ycsb_run = ycsb_cmd.split(' && ')
 
-        ycsb_load_proc = subprocess.Popen(shlex.split(ycsb_load), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
-        stdout, stderr = ycsb_load_proc.communicate()
+        client_proc = subprocess.Popen(client_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, preexec_fn=os.setsid)
+        stdout, stderr = client_proc.communicate()
         print(stdout.decode('utf-8'))
         print(stderr.decode('utf-8'))
 
-        time.sleep(5)
+        #time.sleep(5)
 
-        ycsb_run_proc = subprocess.Popen(shlex.split(ycsb_run), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
-        stdout, stderr = ycsb_run_proc.communicate()
-        print(stdout.decode('utf-8'))
-        print(stderr.decode('utf-8'))
+        #ycsb_run_proc = subprocess.Popen(shlex.split(ycsb_run), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+        #stdout, stderr = ycsb_run_proc.communicate()
+        #print(stdout.decode('utf-8'))
+        #print(stderr.decode('utf-8'))
 
         os.killpg(os.getpgid(self.popen.pid), signal.SIGINT)
 
