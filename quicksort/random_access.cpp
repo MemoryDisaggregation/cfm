@@ -7,6 +7,8 @@
 #include <random>
 #include <thread>
 
+#define NUM_THREADS 4
+
 const size_t MB = 1024 * 1024;
 using namespace std::chrono;
 
@@ -44,7 +46,7 @@ void random_add(long numInts) {
 		atomic_vector->at(idx).fetch_add(1);
 		
 		count++;
-		std::this_thread::sleep_for(std::chrono::microseconds(2));
+		//std::this_thread::sleep_for(std::chrono::microseconds(2));
     }
 
 }
@@ -65,12 +67,12 @@ int main(int argc, char *argv[]) {
 	//std::generate(v.begin(), v.end(), std::rand);
 	//start = high_resolution_clock::now();
 
-	std::thread* threads[32];
-	for(int i = 0; i < 32; ++i) {
-		threads[i] = new std::thread(random_add, (numInts/32));
+	std::thread* threads[NUM_THREADS];
+	for(int i = 0; i < NUM_THREADS; ++i) {
+		threads[i] = new std::thread(random_add, (numInts/NUM_THREADS));
 	}
 
-	for(int i = 0; i < 32; ++i) {
+	for(int i = 0; i < NUM_THREADS; ++i) {
 		threads[i]->join();
 	}
 
