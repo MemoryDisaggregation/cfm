@@ -7,7 +7,7 @@
 #include <random>
 #include <thread>
 
-#define NUM_THREADS 4
+#define NUM_THREADS 32
 
 const size_t MB = 1024 * 1024;
 using namespace std::chrono;

@@ -2,7 +2,7 @@ import numpy as np
 import os
 
 # 指定目录路径
-directory = "/mydata/cfm/ebpf_profiling/"
+directory = "/mydata/cfm/memcached/"
 
 # 获取目录下所有txt文件
 txt_files = [f for f in os.listdir(directory) if f.endswith('.txt')]

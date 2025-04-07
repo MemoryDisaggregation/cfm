@@ -6,9 +6,9 @@
 #include <fstream> 
 
 // 插入数据：这里我们使用多个线程并发插入键值对
-const uint64_t total_keys = 20 * 1024 * 1024;  // 20M KV pairs
+const uint64_t total_keys = 40 * 1024 * 1024;  // 20M KV pairs
 const uint64_t value_size = 1024;  // 1KB
-const uint64_t threads_num = 4;
+const uint64_t threads_num = 32;
 const uint64_t keys_per_thread = total_keys / threads_num;
 
 void insert_data(memcached_st* memc, const std::string& key, const std::string& value) {
@@ -62,7 +62,7 @@ void tfunc(uint64_t tid, uint64_t port) {
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> duration = end - start;
 
-        of << "Thread " << tid << " Throughput : " << (double)keys_per_thread/duration.count() << std::endl;
+        of << (double)keys_per_thread/duration.count() << std::endl;
     }
 
     memcached_free(memc);

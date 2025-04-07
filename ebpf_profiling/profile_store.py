@@ -1,8 +1,8 @@
 from bcc import BPF
 from time import sleep
 
-func = "get_swap_pages"
-file_path_prex = "res_get_swap_pages"
+func = "sswap_store"
+file_path_prex = "res_sswap_store"
 file_path_tail = ".txt"
 
 # 定义BPF程序
@@ -17,7 +17,6 @@ BPF_HASH(start, u32, u64);
 struct data_t {
     u32 pid;
     u64 delta;
-    u64 pages;
 };
 BPF_PERF_OUTPUT(events);
 
@@ -36,18 +35,12 @@ int trace_func_return(struct pt_regs *ctx) {
     if (tsp != 0) {
         u64 ts = bpf_ktime_get_ns();
         u64 delta = ts - *tsp;
-        u64 pages = PT_REGS_RC(ctx);
-        u64 avg_delay;
-        if (pages > 0) {
-            struct data_t data = {};
-            data.pid = pid;
-            data.delta = delta;
-            data.pages = pages;
         
-            events.perf_submit(ctx, &data, sizeof(data));
-        }
-
+        struct data_t data = {};
+        data.pid = pid;
+        data.delta = delta;
         
+        events.perf_submit(ctx, &data, sizeof(data));
         
         start.delete(&pid);
     }
@@ -69,7 +62,8 @@ def print_event(cpu, data, size):
     event = b["events"].event(data)
     file_path = file_path_prex + str(event.pid) + file_path_tail
     f = open(file_path, 'a')
-    print(f"PID {event.pid}: {event.pages} ns")
+    print(f"PID {event.pid}: {event.delta} ns")
+    f.write(f"{event.delta}\n")
 
 # 绑定事件
 b["events"].open_perf_buffer(print_event)
