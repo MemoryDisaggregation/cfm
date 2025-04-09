@@ -192,10 +192,17 @@ class RandomAccess(Workload):
     coeff = [-895.83333333, 1814.16666667, -719.04166667, -586.04166667,  635.5]
 
     def get_cmdline(self, procs_path, pinned_cpus):
+        cpu_list = list(range(32))
+        cpu_list.extend(range(64, 96))
+        cpu_list.extend(range(32, 64))
+        pinned_cpus = ','.join(str(cpu_list[i]) for i in range(1, 32, 2))
+        print("pinned cpus are {}".format(pinned_cpus))
+
         prefix = "echo $$ > {} &&".format(procs_path)
         arg = '32768'
         shell_cmd = '/usr/bin/time -v' + ' ' + constants.WORK_DIR + '/quicksort/random_access {}'.format(arg)
-        pinned_cpus_string = ','.join(map(str, pinned_cpus))
+        #pinned_cpus_string = ','.join(map(str, pinned_cpus))
+        pinned_cpus_string = pinned_cpus
         set_cpu = 'taskset -c {}'.format(pinned_cpus_string)
         full_command = ' '.join((prefix, 'exec', set_cpu, shell_cmd))
         return full_command
@@ -324,7 +331,7 @@ class Pagerank(Workload):
 
 class Memcached(Workload):
     wname = "memcached"
-    ideal_mem = 49000 
+    ideal_mem = 24500
     min_ratio = 0.6
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "memcached"
@@ -342,23 +349,36 @@ class Memcached(Workload):
 
     def get_cmdline(self, procs_path, pinned_cpus):
         prefix = 'echo $$ > {} &&'
-        memcached_serv = "/usr/bin/time -v memcached -p {} -m {} -c 1024 -t 32".format(
+        memcached_serv = "/usr/bin/time -v memcached -p {} -m {} -c 1024 -t 1".format(
             self.port_number, self.ideal_mem)
-        cpu_list = list(pinned_cpus)
+        
+        cpu_list = list(range(32))
+        cpu_list.extend(range(64, 96))
+        """
         sever_taskset = ','.join((str(cpu_list[0]), str(cpu_list[1]), str(cpu_list[2]), str(cpu_list[3]), str(cpu_list[4]), str(cpu_list[5]), str(cpu_list[6]), str(cpu_list[7]),
                                   str(cpu_list[8]), str(cpu_list[9]), str(cpu_list[10]), str(cpu_list[11]), str(cpu_list[12]), str(cpu_list[13]), str(cpu_list[14]), str(cpu_list[15]),
                                   str(cpu_list[16]), str(cpu_list[17]), str(cpu_list[18]), str(cpu_list[19]), str(cpu_list[20]), str(cpu_list[21]), str(cpu_list[22]), str(cpu_list[23]),
                                  str(cpu_list[24]), str(cpu_list[25]), str(cpu_list[26]), str(cpu_list[27]), str(cpu_list[28]), str(cpu_list[29]), str(cpu_list[30]), str(cpu_list[31]),
                                  ))
+        """
+        sever_taskset = ','.join(str(cpu_list[i]) for i in range(1, 3, 2))
+        #sever_taskset += ','
+        #sever_taskset += ','.join(str(cpu_list[i]) for i in range(44, 64, 2))
         taskset_serv = 'taskset -c {}'.format(sever_taskset)
         memcached_serv = ' '.join((prefix, 'exec', taskset_serv, memcached_serv))
         memcached_serv = memcached_serv.format(procs_path)
 
+        """
         client_taskset = ','.join(( 
-            #str(cpu_list[24]), str(cpu_list[25]), str(cpu_list[26]), str(cpu_list[27]), str(cpu_list[28]), str(cpu_list[29]), str(cpu_list[30]), str(cpu_list[31]),
-            str(cpu_list[32]), str(cpu_list[33]), str(cpu_list[34]), str(cpu_list[35]), str(cpu_list[36]), str(cpu_list[37]), str(cpu_list[38]), str(cpu_list[39]),
-                                   str(cpu_list[40]), str(cpu_list[41]), str(cpu_list[42]), str(cpu_list[43]), str(cpu_list[44]), str(cpu_list[45]), str(cpu_list[46]), str(cpu_list[47])))
-
+                    str(cpu_list[32]), str(cpu_list[33]), str(cpu_list[34]), str(cpu_list[35]), str(cpu_list[36]), str(cpu_list[37]), str(cpu_list[38]), str(cpu_list[39]),
+                    str(cpu_list[40]), str(cpu_list[41]), str(cpu_list[42]), str(cpu_list[43]), str(cpu_list[44]), str(cpu_list[45]), str(cpu_list[46]), str(cpu_list[47]),
+                    str(cpu_list[48]), str(cpu_list[49]), str(cpu_list[50]), str(cpu_list[51]), str(cpu_list[52]), str(cpu_list[53]), str(cpu_list[54]), str(cpu_list[55]),
+                    str(cpu_list[56]), str(cpu_list[57]), str(cpu_list[58]), str(cpu_list[59]), str(cpu_list[60]), str(cpu_list[61]), str(cpu_list[62]), str(cpu_list[63]),
+                    ))
+        """
+        client_taskset = ','.join(str(cpu_list[i]) for i in range(0, 2, 2))
+        #client_taskset += ','
+        #client_taskset += ','.join(str(cpu_list[i]) for i in range(45, 64, 2))
         taskset_client = 'taskset -c {}'.format(client_taskset)
         #ycsb_load = taskset_ycsb + ' ' + constants.WORK_DIR + "/memcached/ycsb-0.17.0/bin/ycsb.sh load memcached -s -P " + \
         #            constants.WORK_DIR + "/memcached/ycsb-0.17.0/workloads/workloadb -p \"memcached.hosts=localhost:{}\" -p \"operationcount=30000000\" -p \"recordcount=30000000\" -p \"fieldlength=256\" -p \"fieldcount=2\"".format(self.port_number)
