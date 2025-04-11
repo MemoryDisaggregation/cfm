@@ -142,7 +142,7 @@ class Workload:
 
 class Quicksort(Workload):
     wname = "quicksort"
-    ideal_mem = 10400
+    ideal_mem = 10240
     min_ratio = 0.7
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "quicksort"
@@ -195,7 +195,7 @@ class RandomAccess(Workload):
         cpu_list = list(range(32))
         cpu_list.extend(range(64, 96))
         cpu_list.extend(range(32, 64))
-        pinned_cpus = ','.join(str(cpu_list[i]) for i in range(1, 32, 2))
+        pinned_cpus = ','.join(str(cpu_list[i]) for i in range(1, 64, 2))
         print("pinned cpus are {}".format(pinned_cpus))
 
         prefix = "echo $$ > {} &&".format(procs_path)
@@ -349,7 +349,7 @@ class Memcached(Workload):
 
     def get_cmdline(self, procs_path, pinned_cpus):
         prefix = 'echo $$ > {} &&'
-        memcached_serv = "/usr/bin/time -v memcached -p {} -m {} -c 1024 -t 1".format(
+        memcached_serv = "/usr/bin/time -v memcached -p {} -m {} -c 1024 -t 32".format(
             self.port_number, self.ideal_mem)
         
         cpu_list = list(range(32))
@@ -361,7 +361,7 @@ class Memcached(Workload):
                                  str(cpu_list[24]), str(cpu_list[25]), str(cpu_list[26]), str(cpu_list[27]), str(cpu_list[28]), str(cpu_list[29]), str(cpu_list[30]), str(cpu_list[31]),
                                  ))
         """
-        sever_taskset = ','.join(str(cpu_list[i]) for i in range(1, 3, 2))
+        sever_taskset = ','.join(str(cpu_list[i]) for i in range(1, 64, 2))
         #sever_taskset += ','
         #sever_taskset += ','.join(str(cpu_list[i]) for i in range(44, 64, 2))
         taskset_serv = 'taskset -c {}'.format(sever_taskset)
@@ -376,7 +376,7 @@ class Memcached(Workload):
                     str(cpu_list[56]), str(cpu_list[57]), str(cpu_list[58]), str(cpu_list[59]), str(cpu_list[60]), str(cpu_list[61]), str(cpu_list[62]), str(cpu_list[63]),
                     ))
         """
-        client_taskset = ','.join(str(cpu_list[i]) for i in range(0, 2, 2))
+        client_taskset = ','.join(str(cpu_list[i]) for i in range(0, 64, 2))
         #client_taskset += ','
         #client_taskset += ','.join(str(cpu_list[i]) for i in range(45, 64, 2))
         taskset_client = 'taskset -c {}'.format(client_taskset)
