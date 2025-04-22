@@ -1,8 +1,8 @@
 from bcc import BPF
 from time import sleep
 
-func = "alloc_remote_page"
-file_path_prex = "res_alloc_remote_page"
+func = "free_remote_page"
+file_path_prex = "res_free_remote_page"
 file_path_tail = ".txt"
 
 # 定义BPF程序

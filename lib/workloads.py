@@ -162,7 +162,7 @@ class Quicksort(Workload):
 
 class LinearRegression(Workload):
     wname = "linearregression"
-    ideal_mem = 8200
+    ideal_mem = 6300
     min_ratio = 0.7
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "lr"
@@ -307,7 +307,7 @@ class Snappy(Workload):
 
 class Pagerank(Workload):
     wname = "pagerank"
-    ideal_mem = 5250
+    ideal_mem = 3580
     min_ratio = 1
     min_mem = int(min_ratio * ideal_mem)
     binary_name = "pr"

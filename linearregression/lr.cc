@@ -87,7 +87,7 @@ std::vector<double> linearRegression(const std::vector<std::vector<double>>& dat
 }
 
 int main() {
-    const size_t numSamples = 25000000;  // Adjust to generate ~8GB of data (estimate per row size)
+    const size_t numSamples = 19200000;  // Adjust to generate ~8GB of data (estimate per row size)
     const size_t numFeatures = 16;
 
     std::cout << "Generating data..." << std::endl;
