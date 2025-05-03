@@ -4,33 +4,42 @@
 #include <libmemcached/memcached.h>
 #include <chrono>
 #include <fstream>
-#include <numeric> // 用于计算平均值
-#include <algorithm> // 用于 std::sort
+#include <numeric>
+#include <algorithm>
+#include <random>
 
-// 插入数据：这里我们使用多个线程并发插入键值对
-const uint64_t total_keys = 20 * 1024 * 1024;  // 40M KV pairs
-const uint64_t value_size = 1024;  // 1KB
-const uint64_t threads_num = 1;
+const uint64_t total_keys = 16 * 1024 * 1024;  // 16M keys
+const uint64_t value_size = 930;               // ~1KB
+const uint64_t threads_num = 2;
 const uint64_t keys_per_thread = total_keys / threads_num;
+const uint64_t batch_size = 1;
 
 void insert_data(memcached_st* memc, const std::string& key, const std::string& value) {
-    // 插入键值对
     memcached_return rc = memcached_set(memc, key.c_str(), key.size(), value.c_str(), value.size(), (time_t)0, (uint32_t)0);
     if (rc != MEMCACHED_SUCCESS) {
         std::cerr << "Memcached set failed: " << memcached_strerror(memc, rc) << std::endl;
-    } 
+    }
 }
 
-void access_memcached(memcached_st* memc, const std::string& key, const std::string& value) {
-    memcached_return rc;
-    size_t value_length;
-    uint32_t flags;
-    char* result = memcached_get(memc, key.c_str(), key.size(), &value_length, &flags, &rc);
+void access_memcached_batch(memcached_st* memc, const std::vector<std::string>& keys) {
+    std::vector<const char*> key_ptrs;
+    std::vector<size_t> key_lens;
+
+    for (const auto& key : keys) {
+        key_ptrs.push_back(key.c_str());
+        key_lens.push_back(key.size());
+    }
+
+    memcached_return rc = memcached_mget(memc, key_ptrs.data(), key_lens.data(), keys.size());
     if (rc != MEMCACHED_SUCCESS) {
-        std::cout << "Get key failed: " << key << std::endl;
+        std::cerr << "memcached_mget failed: " << memcached_strerror(memc, rc) << std::endl;
         return;
-    } 
-    free(result); 
+    }
+
+    memcached_result_st* result;
+    while ((result = memcached_fetch_result(memc, nullptr, &rc)) != nullptr) {
+        memcached_result_free(result);
+    }
 }
 
 void tfunc(uint64_t tid, uint64_t port) {
@@ -47,35 +56,41 @@ void tfunc(uint64_t tid, uint64_t port) {
         return;
     }
 
-    for(uint64_t i = tid * keys_per_thread; i < (tid+1) * keys_per_thread; ++i) {
+    // 插入初始数据
+    for (uint64_t i = tid * keys_per_thread; i < (tid + 1) * keys_per_thread; ++i) {
         std::string key = std::to_string(i);
-        std::string value(value_size, 'x');  // 填充1KB的值
+        std::string value(value_size, 'x');
         insert_data(memc, key, value);
     }
 
-    while(true) {
+    // 访问循环
+    while (true) {
         auto start = std::chrono::high_resolution_clock::now();
-        std::vector<double> latencies; // 存储每次请求的延迟
-        
-        for(uint64_t i = tid * keys_per_thread; i < (tid+1) * keys_per_thread; ++i) {
+        std::vector<double> latencies;
+        std::mt19937 gen(std::random_device{}());
+        std::uniform_int_distribution<> dis(tid * keys_per_thread, (tid + 1) * keys_per_thread - 1);
+
+        for (uint64_t i = tid * keys_per_thread; i < (tid + 1) * keys_per_thread; i += batch_size) {
+            std::vector<std::string> batch_keys;
+            for (size_t j = 0; j < batch_size; ++j) {
+                batch_keys.emplace_back(std::to_string(dis(gen)));
+            }
+
             auto req_start = std::chrono::high_resolution_clock::now();
-            
-            std::string key = std::to_string(i);
-            std::string value;
-            access_memcached(memc, key, value);
-            
+            access_memcached_batch(memc, batch_keys);
             auto req_end = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double, std::micro> req_latency = req_end - req_start;
-            latencies.push_back(req_latency.count());
+            std::chrono::duration<double, std::micro> latency = req_end - req_start;
+            latencies.push_back(latency.count());
         }
 
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> duration = end - start;
 
-        // 写入吞吐量
-        of << (double)keys_per_thread / duration.count() << std::endl;
+        // 吞吐量：总请求次数 = keys_per_thread / batch_size
+        double throughput = (keys_per_thread / (double)batch_size) / duration.count();
+        of << throughput << std::endl;
 
-        // 写入 P5 到 P95 的延迟
+        // 延迟 P5-P95
         std::sort(latencies.begin(), latencies.end());
         for (int p = 5; p <= 95; p += 5) {
             size_t idx = static_cast<size_t>(p / 100.0 * latencies.size());
@@ -89,7 +104,12 @@ void tfunc(uint64_t tid, uint64_t port) {
     memcached_free(memc);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        std::cerr << "Usage: ./memcached_client <port>" << std::endl;
+        return 1;
+    }
+
     long port = std::stoi(argv[1]);
     std::vector<std::thread*> threads(threads_num);
 
@@ -97,7 +117,6 @@ int main(int argc, char *argv[]) {
         threads[i] = new std::thread(tfunc, i, port);
     }
 
-    // 等待所有线程完成
     for (auto& t : threads) {
         t->join();
     }
